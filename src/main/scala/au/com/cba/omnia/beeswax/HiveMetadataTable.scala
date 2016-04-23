@@ -106,7 +106,15 @@ object HiveMetadataTable {
       }
 
       // n type params
-      case TType.STRUCT => throw new Exception("STRUCT is not a supported Hive type")
+      case TType.STRUCT => {
+        val thrift = field.manifest.get.runtimeClass
+        val codec  = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
+        val metadata              = codec.metaData
+        val columnFieldSchemas    = metadata.fields.sortBy(_.id).map { c =>
+          (c.name, HiveMetadataTable.mapType(c).toLowerCase)
+        }
+        s"struct<${columnFieldSchemas.map(t => s"${t._1}:${t._2}").mkString(",")}>"
+      }
 
       // terminals
       case TType.VOID   => throw new Exception("VOID is not a supported Hive type")
@@ -149,4 +157,13 @@ object HiveMetadataTable {
 
   /** Gets the manifest for `T`. */
   def manifest[T : Manifest]: Manifest[T] = implicitly[Manifest[T]]
+
+  def argsOfThrift[B <: ThriftStruct](field: ThriftStructField[B])(implicit m: Manifest[B]): Seq[(String, String)] = {
+    val thrift: Class[B] = m.runtimeClass.asInstanceOf[Class[B]]
+    val codec = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
+    val metadata = codec.metaData
+    metadata.fields.sortBy(_.id).map { c =>
+      (c.name, mapType(c).toLowerCase)
+    }
+  }
 }

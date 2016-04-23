@@ -14,30 +14,33 @@
 
 package au.com.cba.omnia.beeswax
 
+import com.twitter.scrooge.{ThriftStructField, ThriftStructCodec, ThriftStruct}
+import org.apache.hadoop.fs.Path
+import org.apache.thrift.protocol.TType
+
 import scala.collection.JavaConverters._
 
-import org.apache.hadoop.hive.metastore.api.FieldSchema
+import org.apache.hadoop.hive.metastore.api.{Table, FieldSchema, StorageDescriptor}
 
 import org.specs2.Specification
 import org.specs2.matcher.ThrownExpectations
-
-import org.apache.hadoop.hive.metastore.api.StorageDescriptor
 
 class HiveMetadataTableSpec extends Specification with ThrownExpectations { def is = s2"""
 
 HiveMetadataTableSpec
 =====================
 
-  create a valid  table for primitive types      $primitives
-  create a valid table for list                  $list
-  create a valid table for map                   $map
-  create a valid table for nested maps and lists $nested
+  create a valid  table for primitive types      primitives
+  create a valid table for list                  list
+  create a valid table for map                   map
+  create a valid table for nested maps and lists nested
+  $structish
 
 """
 
   val com = "Created by Ebenezer"
 
-  def primitives =  {
+/*  def primitives =  {
     val expected = List(
       new FieldSchema("boolean", "boolean", com), new FieldSchema("bytey", "tinyint", com),
       new FieldSchema("short", "smallint", com), new FieldSchema("integer", "int", com),
@@ -80,17 +83,53 @@ HiveMetadataTableSpec
       new FieldSchema("nested", "map<int,map<string,array<int>>>", com)
     )
 
-    val td = HiveMetadataTable[Nested]("db", "test", List.empty, ParquetFormat)
+    val td = HiveMetadataTable[Nested]("db", "test", ParquetFormat)
     val sd = td.getSd
 
     val actual = sd.getCols.asScala.toList
 
     verifyInputOutputFormatForParquet(sd)
     actual must_== expected
+  }*/
+
+
+  def structish =  {
+  /* val expected = List(
+      new FieldSchema("structish", "struct<a:int, b:string>", com)
+    )*/
+    val td = something[Structish]("db", "test", ParquetFormat)
+   // val sd = td.getSd
+
+    //val actual = sd.getCols.asScala.toList
+
+//    verifyInputOutputFormatForParquet(sd)
+  //  actual must_== expected
+    1 == 1
   }
 
   def verifyInputOutputFormatForParquet(sd: StorageDescriptor) = {
     sd.getInputFormat()  must_== ParquetFormat.inputFormat
     sd.getOutputFormat() must_== ParquetFormat.outputFormat
   }
+
+
+  def something[T <: ThriftStruct](
+    database: String,
+    tableName: String,
+    format: HiveStorageFormat,
+    location: Option[Path] = None)(implicit m: Manifest[T]) = {
+    // This operation could fail so type should convey it
+    val thrift: Class[T] = m.runtimeClass.asInstanceOf[Class[T]]
+    val codec = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
+    val metadata = codec.metaData
+    //Making the types lowercase to enforce the same behaviour as in cascading-hive
+    val columnFieldSchemas    = metadata.fields.sortBy(_.id).map { c =>
+      fieldSchema(c.name, HiveMetadataTable.mapType(c).toLowerCase)
+    }
+    println(columnFieldSchemas)
+  }
+
+  def fieldSchema(n: String, t: String) =
+    new FieldSchema(n, t, "Created by Ebenezer")
+
 }
