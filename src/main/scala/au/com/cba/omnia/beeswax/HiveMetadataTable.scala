@@ -39,14 +39,10 @@ object HiveMetadataTable {
     format: HiveStorageFormat,
     location: Option[Path] = None
   )(implicit m: Manifest[T]): MetadataTable = { // This operation could fail so type should convey it
-    val thrift: Class[T]      = m.runtimeClass.asInstanceOf[Class[T]]
-    val codec                 = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
-    val metadata              = codec.metaData
-    //Making the types lowercase to enforce the same behaviour as in cascading-hive
-    val columnFieldSchemas    = metadata.fields.sortBy(_.id).map { c => 
-      fieldSchema(c.name, mapType(c).toLowerCase)
-    }
-    val partitionFieldSchemas = partitionColumns.map {case(n, t) => fieldSchema(n, t)}
+    val thrift: Class[T]               = m.runtimeClass.asInstanceOf[Class[T]]
+    val (metadata, schema)             = getMetadataSchema(thrift)
+    val partitionFieldSchemas          = partitionColumns.map {case(n, t) => fieldSchema(n, t)}
+    val columnFieldSchemas             = schema.map(c => fieldSchema(c._1, c._2))
 
     assert(
       partitionColumns.map(_._1).intersect(metadata.fields.map(_.name)).isEmpty,
@@ -60,15 +56,15 @@ object HiveMetadataTable {
     val sd = new StorageDescriptor();
     columnFieldSchemas.foreach(f => sd.addToCols(f)) 
 
-    location.fold(table.setTableType(TableType.MANAGED_TABLE.toString()))(p => {
-      table.setTableType(TableType.EXTERNAL_TABLE.toString())
+    location.fold(table.setTableType(TableType.MANAGED_TABLE.toString))(p => {
+      table.setTableType(TableType.EXTERNAL_TABLE.toString)
       //Copied from cascading-hive - Need to set this as well since setting the table type would be too obvious
       table.putToParameters("EXTERNAL", "TRUE");
-      sd.setLocation(p.toString())
+      sd.setLocation(p.toString)
     })
     table.setSd(sd)
 
-    if (!partitionFieldSchemas.isEmpty) {
+    if (partitionFieldSchemas.nonEmpty) {
         table.setPartitionKeys(partitionFieldSchemas)
         table.setPartitionKeysIsSet(true)
     }
@@ -108,12 +104,8 @@ object HiveMetadataTable {
       // n type params
       case TType.STRUCT => {
         val thrift = field.manifest.get.runtimeClass
-        val codec  = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
-        val metadata              = codec.metaData
-        val columnFieldSchemas    = metadata.fields.sortBy(_.id).map { c =>
-          (c.name, HiveMetadataTable.mapType(c).toLowerCase)
-        }
-        s"struct<${columnFieldSchemas.map(t => s"${t._1}:${t._2}").mkString(",")}>"
+        val schema = getMetadataSchema(thrift)
+        s"struct<${schema._2.map(t => s"${t._1}:${t._2}").mkString(",")}>"
       }
 
       // terminals
@@ -165,5 +157,12 @@ object HiveMetadataTable {
     metadata.fields.sortBy(_.id).map { c =>
       (c.name, mapType(c).toLowerCase)
     }
+  }
+
+  def getMetadataSchema(thrift: Class[_])= {
+    val codec                 = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
+    val metadata              = codec.metaData
+    //Making the types lowercase to enforce the same behaviour as in cascading-hive
+    (metadata, metadata.fields.sortBy(_.id).map { c => (c.name, mapType(c).toLowerCase) })
   }
 }

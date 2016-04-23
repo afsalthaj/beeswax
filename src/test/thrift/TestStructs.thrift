@@ -29,11 +29,6 @@ struct Listish {
   2: list<i32> listy
 }
 
-
-struct SecondListish {
-  1: list<i32> listy
-}
-
 struct Mapish {
   1: i16 short
   2: map<i32, string> mapy
@@ -43,6 +38,17 @@ struct Nested {
   1: map<i32, map<string, list<i32>>> nested
 }
 
-struct Structish {
-1: Primitives primitives
+struct StructishPrimitives {
+1: i16 short
+2: Primitives primitives
+}
+
+struct StructishMap {
+1: i16 short
+2: Mapish mapish
+}
+
+struct StructishList {
+1: i16 short
+2: Listish listy
 }
