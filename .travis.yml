@@ -3,8 +3,8 @@ jdk:
 - oraclejdk7
 cache:
   directories:
-  - $HOME/.ivy2
-  - $HOME/.m2
+  - "$HOME/.ivy2"
+  - "$HOME/.m2"
 install:
 - git clone https://github.com/CommBank/ci.git
 - chmod ugo+x ci/*
@@ -17,7 +17,7 @@ after_script:
 - rm -rf ci
 env:
   global:
-    secure: cU0A9utG0jOunGn420VpkkHtL8tTxaODROWvy51CaZV+NkWn7i+nzrpiheeGiCj7gI3VaWuXM3PD0L5Ay57uNmP6AJIue+ZoYcf3wn67S01Gs7/2ldievz6ShNC+pDKar2bOLQih7vHJORgLyQEuXX99fuEQIzdREv1MQ5Lp5MYylx32uMh0/V191NP+c4QiPS5RUniuxpvqMvrwmYym7chTvBjN4czFDFcyPlgBgHHrKhN2y4wvy70fMP0TJNBSVlyhbzAkIxS5qLV2Ngab8BIxRjVfTIz7t+efeBsYBLyXmV+cClAe059lZrzE2hT63gQL+4D5hOPuJE1P+LvdLzf3tCunB2IpIdAfKlAGZvf3Y8gQ8MjNnc4sHFvGz4/mXkOaKo9qDQgBO9UhCo5v/Tt+LPapT6tLCbKmrX2nGYYCK+9WMcEpFUMMRXhMWZopwumgjJQlkBF35d9n5XASQpe6/6vJNkIz4TTzCrkOYW2uz6se9Fq3EmGSIUAUnpDQBUJMcjRY89uUHmkClMdwbbFJk8Ihd7PxHAyaF/QML+zK8uQW+dqELSyXvx/zGrQIzSrSEEg55QrLs4nOtzoownSOyVvrER31xJScvGs5RlvQ5ePHaMvA1pa14i3ClID6UTZ+h50KTCyr5jK+Hmh6whtbRmzapl3dbGa0/v32lmU=
+    secure: lUy2mJoS79IKZYR8JWJkqIY4VPzM2tFUi0uHw7x16xRi2OpQr54P/ESXeomIjGOeSps317V3SwabH11DiLMkiDc4vlPlm7LYBf09kekZUAYl2VZE21/5MVfnfzWKxpfi+Cg0riir5V7GBxA97ZKwKDwiw7d5SdbqDMmgMIiCds46pPw+iKchMZxiT7FoAEB5RcBDjCstmMyTqW30eKmFkqlNFtev6lulbOEtiGZzO5DF5n6m52r/2KRBTIOBZOTm46+oDF2/WvJdFgzj0EaJX3bPvdsEDoIcRD9Fkr1flzK+MBUUbVSmsudAFEcRLbZuaWfFPdPd3pCaPU9qhOS9Yb1DLCiN9sj8VPt1SXswEwsu46nRMx13RvCudG5uvKtfMRgszl9tluTvImi/nzlhOkA/uV/P2SK3IDszJtM9v5NWYqlCPOB/im8ixYKxfuAExrlbFGr+7BCd/QAIJNNZPD2opz8raxQSRjTAO2Xne1y4NyIDzA7qOCGLa/zu3o9jG89IuijmigDzlyCcCcnG5SMav3j0FZMtos9hVMaJ4QX2tQ2vrFlxlNVOIedAsar32PPkruIHWpfklhP7slgNxx8QpH08b9lnf1w0YszM7pnfwaNXGqK/ktBG4homkVv1H3InCjM6KC5cquIdw6L20Zw3GHD8Y9KM/lc8cd7VSTA=
 before_install:
 - openssl aes-256-cbc -K $encrypted_d84550f15e95_key -iv $encrypted_d84550f15e95_iv
   -in .travis/deploy-key.enc -out .travis/deploy-key.pem -d
