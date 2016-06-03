@@ -14,15 +14,9 @@
 
 package au.com.cba.omnia.beeswax
 
-import com.twitter.scrooge.{ThriftStructField, ThriftStructCodec, ThriftStruct}
-import org.apache.hadoop.fs.Path
-import org.apache.thrift.protocol.TType
-
-import org.apache.hadoop.hive.metastore.api.{Table => MetadataTable, StorageDescriptor, FieldSchema}
-
 import scala.collection.JavaConverters._
 
-import org.apache.hadoop.hive.metastore.api.{Table, FieldSchema, StorageDescriptor}
+import org.apache.hadoop.hive.metastore.api.{FieldSchema, StorageDescriptor}
 
 import org.specs2.Specification
 import org.specs2.matcher.ThrownExpectations

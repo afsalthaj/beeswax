@@ -24,11 +24,10 @@ import org.apache.hadoop.hive.metastore.api.{Table => MetadataTable, StorageDesc
 
 import org.apache.thrift.protocol.TType
 
-import com.twitter.scrooge.{ThriftStruct, ThriftStructCodec, ThriftStructField}
+import com.twitter.scrooge.{ThriftStructMetaData, ThriftStruct, ThriftStructCodec, ThriftStructField}
 
 /** Replicates the functionality from cascading-hive.*/
 object HiveMetadataTable {
-  
   /** While the earlier operations failed with exception from with the cascading-hive code,
     * we need to deal with failure via `Result`
     */
@@ -39,10 +38,11 @@ object HiveMetadataTable {
     format: HiveStorageFormat,
     location: Option[Path] = None
   )(implicit m: Manifest[T]): MetadataTable = { // This operation could fail so type should convey it
-    val thrift: Class[T]               = m.runtimeClass.asInstanceOf[Class[T]]
-    val (metadata, schema)             = getMetadataSchema(thrift)
-    val partitionFieldSchemas          = partitionColumns.map {case(n, t) => fieldSchema(n, t)}
-    val columnFieldSchemas             = schema.map(c => fieldSchema(c._1, c._2))
+    val thrift: Class[T]      = m.runtimeClass.asInstanceOf[Class[T]]
+    val metadata              = getMetadata(thrift)
+    val schema                = getSchema(metadata)
+    val partitionFieldSchemas = partitionColumns.map {case(n, t) => fieldSchema(n, t)}
+    val columnFieldSchemas    = schema.map(c => fieldSchema(c._1, c._2))
 
     assert(
       partitionColumns.map(_._1).intersect(metadata.fields.map(_.name)).isEmpty,
@@ -103,9 +103,10 @@ object HiveMetadataTable {
 
       // n type params
       case TType.STRUCT => {
-        val thrift = field.manifest.get.runtimeClass
-        val schema = getMetadataSchema(thrift)
-        s"struct<${schema._2.map(t => s"${t._1}:${t._2}").mkString(",")}>"
+        val thrift   = field.manifest.get.runtimeClass
+        val metadata = getMetadata(thrift)
+        val schema   = getSchema(metadata)
+        s"struct<${schema.map(t => s"${t._1}:${t._2}").mkString(",")}>"
       }
 
       // terminals
@@ -113,6 +114,16 @@ object HiveMetadataTable {
       case TType.STOP   => throw new Exception("STOP is not a supported Hive type")
     }
   }
+
+  /** Gets the metadata from `ThriftStructCodec` */
+  def getMetadata(thrift: Class[_]) = {
+    val codec = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
+    codec.metaData
+  }
+
+  /** Gets the schema from `T`. */
+  def getSchema[T <: ThriftStruct](metadata: ThriftStructMetaData[T]) =
+    metadata.fields.sortBy(_.id).map { c => (c.name, mapType(c).toLowerCase) }
 
   /** Gets the manifests of the type arguments for complex thrift types such as Map. */
   def argsOf(field: ThriftStructField[_]): List[Manifest[_]] = {
@@ -149,20 +160,4 @@ object HiveMetadataTable {
 
   /** Gets the manifest for `T`. */
   def manifest[T : Manifest]: Manifest[T] = implicitly[Manifest[T]]
-
-  def argsOfThrift[B <: ThriftStruct](field: ThriftStructField[B])(implicit m: Manifest[B]): Seq[(String, String)] = {
-    val thrift: Class[B] = m.runtimeClass.asInstanceOf[Class[B]]
-    val codec = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
-    val metadata = codec.metaData
-    metadata.fields.sortBy(_.id).map { c =>
-      (c.name, mapType(c).toLowerCase)
-    }
-  }
-
-  def getMetadataSchema(thrift: Class[_])= {
-    val codec                 = Reflect.companionOf(thrift).asInstanceOf[ThriftStructCodec[_ <: ThriftStruct]]
-    val metadata              = codec.metaData
-    //Making the types lowercase to enforce the same behaviour as in cascading-hive
-    (metadata, metadata.fields.sortBy(_.id).map { c => (c.name, mapType(c).toLowerCase) })
-  }
 }
