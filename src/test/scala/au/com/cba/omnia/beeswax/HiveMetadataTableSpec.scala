@@ -32,7 +32,7 @@ HiveMetadataTableSpec
   create a valid table for nested maps and lists   $nested
   create a valid table for structs with primitives $structWithPrimitives
   create a valid table for structs with map        $structWithMaps
-  create a valid table for structs with map        $structWithList
+  create a valid table for structs with list       $structWithList
 
 """
 
